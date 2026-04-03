@@ -1,0 +1,15 @@
+[project]
+name = "clickupagent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "httpx>=0.28.1",
+    "langchain-core>=1.2.25",
+    "langchain-groq>=0.2.0",
+    "langgraph>=1.1.6",
+    "python-dotenv>=1.2.2",
+    "uvicorn>=0.34.0",
+]
