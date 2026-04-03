@@ -26,10 +26,10 @@ def _request(method: str, endpoint: str, **kwargs) -> dict:
         return response.json()
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
-        raise e
+        return {"error": f"HTTP error: {e.response.status_code} - {e.response.text}"}
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        raise e
+        return {"error": str(e)}
 @tool
 def get_tasks() -> str:
     """Fetch tasks from ClickUp."""
@@ -40,7 +40,7 @@ def get_tasks() -> str:
         return "\n".join(result)
     except Exception as e:
         logger.error(f"Error fetching tasks: {e}")
-        raise e
+        return f"Error al obtener tareas: {e}"
 
 
 @tool
@@ -54,7 +54,7 @@ def create_task(name: str, description: str = "") -> str:
         return f"Tarea creada exitosamente. ID: {task_id}, Nombre: {name}"
     except Exception as e:
         logger.error(f"Error creating task: {e}")
-        raise e
+        return f"Error al crear la tarea: {e}"
 
 
 @tool
@@ -73,4 +73,31 @@ def update_task(task_id: str, name: str = None, description: str = None, status:
         return f"Tarea {task_id} actualizada exitosamente."
     except Exception as e:
         logger.error(f"Error updating task: {e}")
-        raise e
+        return f"Error al actualizar la tarea {task_id}: {e}, Usa un id valido"
+
+@tool
+def get_task_details(task_id: str) -> str:
+    """Obtiene toda la información detallada de una tarea específica en ClickUp, 
+    incluyendo su descripción completa, etiquetas y subtareas.
+    Úsala cuando necesites entender el contexto profundo de una tarea antes de modificarla."""
+    try:
+        response = _request("GET", f"/task/{task_id}")
+        desc = response.get("description", "Sin descripción")
+        tags = [tag["name"] for tag in response.get("tags", [])]
+        return f"Tarea {task_id}: {response.get('name')}\nDescripción: {desc}\nEtiquetas: {', '.join(tags) if tags else 'Ninguna'}"
+    except Exception as e:
+        logger.error(f"Error fetching task details: {e}")
+        return f"Error al obtener detalles de la tarea {task_id}: {e}, Usa un id valido"
+
+
+@tool
+def delete_task(task_id: str) -> str:
+    """Usa esta tool para eliminar una tarea en clickup, siempre deberas pasar el task id , sino lo conoces
+    primero debes usar get_tasks para obtener el id de la tarea que quieres eliminar.
+    """
+    try:
+        _request("DELETE", f"/task/{task_id}")
+        return f"Tarea {task_id} eliminada exitosamente."
+    except Exception as e:
+        logger.error(f"Error deleting task: {e}")
+        return f"Error al eliminar la tarea {task_id}: {e}"
