@@ -6,7 +6,7 @@ from agent.nodes.llm_node import llm_node
 from agent.nodes.tools_node import tools_node
 from agent.state import AgentState
 
-
+# Method used to build the graph. It is called once when the module is imported.
 def _build_graph():
     builder = StateGraph(AgentState)
 

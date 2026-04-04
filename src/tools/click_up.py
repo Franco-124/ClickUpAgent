@@ -26,10 +26,10 @@ def _request(method: str, endpoint: str, **kwargs) -> dict:
         return response.json()
     except httpx.HTTPStatusError as e:
         logger.error(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
-        return {"error": f"HTTP error: {e.response.status_code} - {e.response.text}"}
+        return "Error en la comunicación con ClickUp, intenta de nuevo o dile a johan que hubo un error al usar la tool"
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        return {"error": str(e)}
+        return "Error tratando de ejecutar la acción, intenta de nuevo o dile a johan que hubo un error al usar la tool"
 @tool
 def get_tasks() -> str:
     """Fetch tasks from ClickUp."""
@@ -37,10 +37,15 @@ def get_tasks() -> str:
         response = _request("GET", f"/list/{config.CLICKUP_LIST_ID}/task")
         tasks = response.get("tasks", [])
         result = [f"[task id:{t['id']}] task name: {t['name']} — status: {t['status']['status']}" for t in tasks]
+
+        logger.info(f"Tasks retrieved successfully: {len(tasks)} tasks found.")
+        logger.info(f"Tasks details: {result}")
+        if not result:
+            return "Dile a johan que no se encontraron tareas en click up."
         return "\n".join(result)
     except Exception as e:
         logger.error(f"Error fetching tasks: {e}")
-        return f"Error al obtener tareas: {e}"
+        return "Hubo un error al tratar de obtener las tareas, intenta de nuevo o dile a johan que hubo un error al usar la tool"
 
 
 @tool
@@ -51,10 +56,11 @@ def create_task(name: str, description: str = "") -> str:
         body = {"name": name, "description": description}
         response = _request("POST", f"/list/{config.CLICKUP_LIST_ID}/task", json=body)
         task_id = response.get("id")
+        logger.info(f"Task created successfully. ID: {task_id}, Name: {name}")
         return f"Tarea creada exitosamente. ID: {task_id}, Nombre: {name}"
     except Exception as e:
         logger.error(f"Error creating task: {e}")
-        return f"Error al crear la tarea: {e}"
+        return "Hubo un error al tratar de crear la tarea, intenta de nuevo o dile a johan que hubo un error al usar la tool"
 
 
 @tool
@@ -73,7 +79,7 @@ def update_task(task_id: str, name: str = None, description: str = None, status:
         return f"Tarea {task_id} actualizada exitosamente."
     except Exception as e:
         logger.error(f"Error updating task: {e}")
-        return f"Error al actualizar la tarea {task_id}: {e}, Usa un id valido"
+        return "Error tratando de actualizar la tarea, intenta de nuevo o dile a johan que hubo un error al usar la tool"
 
 @tool
 def get_task_details(task_id: str) -> str:
@@ -84,10 +90,11 @@ def get_task_details(task_id: str) -> str:
         response = _request("GET", f"/task/{task_id}")
         desc = response.get("description", "Sin descripción")
         tags = [tag["name"] for tag in response.get("tags", [])]
+        logger.info(f"Task details retrieved successfully. ID: {task_id}, Name: {response.get('name')}")
         return f"Tarea {task_id}: {response.get('name')}\nDescripción: {desc}\nEtiquetas: {', '.join(tags) if tags else 'Ninguna'}"
     except Exception as e:
         logger.error(f"Error fetching task details: {e}")
-        return f"Error al obtener detalles de la tarea {task_id}: {e}, Usa un id valido"
+        return "Error tratando de obtener los detalles de la tarea, intenta de nuevo o dile a johan que hubo un error al usar la tool"
 
 
 @tool
@@ -96,8 +103,11 @@ def delete_task(task_id: str) -> str:
     primero debes usar get_tasks para obtener el id de la tarea que quieres eliminar.
     """
     try:
+        logger.info(f"Attempting to delete task. ID: {task_id}")
+
         _request("DELETE", f"/task/{task_id}")
+        logger.info(f"Task deleted successfully. ID: {task_id}")
         return f"Tarea {task_id} eliminada exitosamente."
     except Exception as e:
         logger.error(f"Error deleting task: {e}")
-        return f"Error al eliminar la tarea {task_id}: {e}"
+        return "Error tratando de eliminar la tarea, intenta de nuevo o dile a johan que hubo un error al usar la tool"
